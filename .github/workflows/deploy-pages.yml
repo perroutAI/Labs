@@ -1,24 +1,25 @@
-name: Deploy UNO Quiz to GitHub Pages
+name: Build & Deploy UNO Quiz
 
 on:
   push:
     branches: [master, main]
     paths:
-      - 'uno-quiz/**'
+      - 'uno-quiz/src/**'
+      - 'uno-quiz/index.html'
+      - 'uno-quiz/vite.config.ts'
+      - 'uno-quiz/package*.json'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: deploy
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -39,21 +40,16 @@ jobs:
         working-directory: uno-quiz
         run: npm run build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Copy dist to repo root
+        run: |
+          cp uno-quiz/dist/index.html index.html
+          rm -rf assets
+          cp -r uno-quiz/dist/assets assets
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: uno-quiz/dist
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Commit built files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html assets/
+          git diff --staged --quiet || git commit -m "chore: update built files [skip ci]"
+          git push
