@@ -1,21 +1,1251 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🃏</text></svg>" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#0f0f23" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet" />
-    <title>UNO Quiz 🃏</title>
-    <script type="module" crossorigin src="/Labs/assets/index-BjyjzuKB.js"></script>
-    <link rel="stylesheet" crossorigin href="/Labs/assets/index-DY387Kcd.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#030712" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🃏</text></svg>" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <title>UNO Quiz 🃏</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: #030712; color: #fff; font-family: 'Nunito', system-ui, sans-serif; overscroll-behavior: none; }
+
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+    }
+
+    button { font-family: inherit; cursor: pointer; touch-action: manipulation; user-select: none; border: none; background: none; color: inherit; }
+    input  { font-family: inherit; }
+
+    /* ── Screens ── */
+    .screen { display: none; }
+    .screen.active { display: flex; flex-direction: column; }
+    #screen-game.active { height: 100dvh; height: 100vh; overflow: hidden; }
+    #screen-landing.active, #screen-gameover.active { min-height: 100dvh; min-height: 100vh; overflow-y: auto; }
+
+    /* ── Card base ── */
+    .card {
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      box-shadow: 0 6px 20px rgba(0,0,0,.5);
+      flex-shrink: 0;
+      border-width: 3px;
+      border-style: solid;
+      transition: transform .12s, opacity .12s;
+      user-select: none;
+    }
+    .card .inner-oval {
+      position: absolute;
+      inset: 12%;
+      border-radius: 50%;
+      background: rgba(255,255,255,.18);
+      transform: rotate(40deg);
+      pointer-events: none;
+    }
+    .card .lbl-tl { position: absolute; top: 4px; left: 6px; font-weight: 900; line-height: 1; }
+    .card .lbl-br { position: absolute; bottom: 4px; right: 6px; font-weight: 900; line-height: 1; transform: rotate(180deg); }
+    .card .lbl-center { position: relative; z-index: 1; text-shadow: 0 2px 6px rgba(0,0,0,.4); line-height: 1; }
+
+    .card-back {
+      border-radius: 12px;
+      border: 3px solid #4b5563;
+      background: linear-gradient(135deg, #374151, #111827);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(0,0,0,.5);
+      flex-shrink: 0;
+      user-select: none;
+      font-weight: 900;
+      color: rgba(255,255,255,.25);
+      letter-spacing: 3px;
+      font-size: 11px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-back::after {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 8px;
+    }
+
+    /* ── Card sizes ── */
+    .card-sm, .card-back.sm { width: 48px; height: 72px; }
+    .card-sm .lbl-tl, .card-sm .lbl-br { font-size: 9px; }
+    .card-sm .lbl-center { font-size: 18px; }
+
+    .card-md, .card-back.md { width: 60px; height: 90px; }
+    .card-md .lbl-tl, .card-md .lbl-br { font-size: 10px; }
+    .card-md .lbl-center { font-size: 26px; }
+
+    .card-lg, .card-back.lg { width: 72px; height: 108px; }
+    .card-lg .lbl-tl, .card-lg .lbl-br { font-size: 11px; }
+    .card-lg .lbl-center { font-size: 34px; }
+
+    .card-xl, .card-back.xl { width: 84px; height: 126px; }
+    .card-xl .lbl-tl, .card-xl .lbl-br { font-size: 12px; }
+    .card-xl .lbl-center { font-size: 42px; }
+
+    /* ── Card colors ── */
+    .cc-red    { background: #dc2626; border-color: #ef4444; }
+    .cc-blue   { background: #2563eb; border-color: #60a5fa; }
+    .cc-green  { background: #16a34a; border-color: #4ade80; }
+    .cc-yellow { background: #ca8a04; border-color: #facc15; color: #fff; }
+    .cc-wild   { background: #1f2937; border-color: #a855f7; }
+
+    /* ── Game layout ── */
+    #top-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: max(var(--sat), 12px) 12px 12px;
+      transition: background .4s;
+    }
+    #top-bar .quit-btn {
+      width: 52px; height: 52px; min-width: 52px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 900; color: #fff;
+      transition: transform .1s;
+    }
+    #top-bar .quit-btn:active { transform: scale(.88); }
+    #top-bar .msg { flex: 1; min-width: 0; }
+    #top-bar .msg-main { font-weight: 900; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #top-bar .msg-sub  { font-size: 11px; color: rgba(255,255,255,.6); margin-top: 1px; }
+    #top-bar .color-pill {
+      padding: 6px 12px; border-radius: 100px;
+      background: rgba(0,0,0,.25); font-weight: 900; font-size: 12px; color: #fff;
+      white-space: nowrap;
+    }
+
+    #others-strip {
+      flex-shrink: 0;
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px;
+      overflow-x: auto;
+      background: rgba(0,0,0,.2);
+      -webkit-overflow-scrolling: touch;
+    }
+    #others-strip::-webkit-scrollbar { display: none; }
+    .other-player {
+      display: flex; align-items: center; gap: 8px;
+      background: #1f2937; border-radius: 16px;
+      padding: 8px 12px; flex-shrink: 0;
+    }
+    .other-player .avatar { font-size: 22px; }
+    .other-player .pname  { font-weight: 900; font-size: 13px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .other-player .pcards { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+
+    #board-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      min-height: 0;
+      padding: 8px 16px;
+    }
+    #board-cards { display: flex; align-items: flex-end; gap: 32px; }
+    .board-card-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .board-label { font-size: 11px; font-weight: 900; color: #6b7280; letter-spacing: 1.5px; }
+    .discard-stack { position: relative; }
+    .discard-stack .card-under { position: absolute; top: 6px; left: 6px; opacity: .3; pointer-events: none; }
+
+    #hand-panel {
+      flex-shrink: 0;
+      background: #111827;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      border-top: 2px solid #1f2937;
+      padding-bottom: max(var(--sab), 16px);
+    }
+    #player-info {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 14px 8px;
+    }
+    #player-info .p-avatar {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; flex-shrink: 0;
+    }
+    #player-info .p-name  { font-weight: 900; font-size: 17px; line-height: 1.1; }
+    #player-info .p-stats { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    #player-info .uno-badge {
+      margin-left: auto;
+      background: #dc2626; color: #fff; font-weight: 900;
+      padding: 6px 14px; border-radius: 100px; font-size: 13px;
+      animation: badge-pulse .6s infinite alternate;
+    }
+    @keyframes badge-pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+
+    #hand-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px 14px 14px;
+    }
+    #hand-scroll::-webkit-scrollbar { display: none; }
+    #hand-inner { display: flex; align-items: flex-end; }
+
+    #draw-btn {
+      margin: 0 14px;
+      width: calc(100% - 28px);
+      min-height: 62px;
+      border-radius: 18px;
+      font-weight: 900; font-size: 18px; color: #fff;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: transform .1s, opacity .1s;
+    }
+    #draw-btn:active { transform: scale(.97); }
+    #draw-btn.can-draw  { background: #d97706; box-shadow: 0 4px 20px rgba(217,119,6,.4); }
+    #draw-btn.can-pass  { background: #1f2937; border: 2px solid #374151; color: #9ca3af; }
+    #draw-btn:disabled  { opacity: .4; }
+
+    /* ── Modals ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(6px);
+      display: none;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-sheet {
+      width: 100%;
+      background: #111827;
+      border-radius: 24px 24px 0 0;
+      padding-bottom: max(var(--sab), 16px);
+      animation: slide-up .25s ease-out;
+      overflow: hidden;
+    }
+    @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    /* ── Question modal ── */
+    #q-header { display: flex; align-items: center; gap: 10px; padding: 14px; }
+    #q-timer-bar { height: 6px; background: #1f2937; }
+    #q-timer-fill { height: 100%; transition: width 1s linear, background .5s; }
+    #q-text { padding: 16px 16px 10px; font-weight: 700; font-size: 16px; line-height: 1.4; text-align: center; }
+    #q-options { padding: 0 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+    .q-opt {
+      width: 100%; min-height: 62px; padding: 0 14px;
+      border-radius: 16px; border: 2px solid #374151;
+      display: flex; align-items: center; gap: 12px;
+      font-weight: 700; font-size: 15px; color: #fff;
+      background: #1f2937; text-align: left;
+      transition: background .2s, border-color .2s;
+    }
+    .q-opt:active { transform: scale(.98); }
+    .q-opt .opt-letter {
+      width: 36px; height: 36px; flex-shrink: 0;
+      border-radius: 50%; background: #374151; color: #9ca3af;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 14px;
+    }
+    .q-opt .opt-icon { margin-left: auto; font-size: 20px; }
+    .q-opt.correct { background: #166534; border-color: #4ade80; }
+    .q-opt.correct .opt-letter { background: #4ade80; color: #fff; }
+    .q-opt.wrong   { background: #7f1d1d; border-color: #f87171; }
+    .q-opt.wrong   .opt-letter { background: #f87171; color: #fff; }
+    .q-opt.dimmed  { opacity: .45; }
+    #q-result { padding: 0 14px 4px; font-weight: 900; font-size: 16px; text-align: center; }
+    #q-confirm {
+      margin: 10px 14px 0;
+      width: calc(100% - 28px); min-height: 64px;
+      border-radius: 18px; font-weight: 900; font-size: 18px; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #q-confirm:active { transform: scale(.97); }
+    #q-confirm.btn-green { background: #16a34a; box-shadow: 0 4px 20px rgba(22,163,74,.4); }
+    #q-confirm.btn-red   { background: #dc2626; box-shadow: 0 4px 20px rgba(220,38,38,.4); }
+    #q-timer-circle {
+      width: 54px; height: 54px; flex-shrink: 0;
+      border-radius: 50%; border: 4px solid #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 22px; color: #fff;
+      transition: border-color .5s, color .5s;
+    }
+    #q-timer-circle.warn   { border-color: #fbbf24; color: #fbbf24; }
+    #q-timer-circle.danger { border-color: #f87171; color: #f87171; animation: pulse-ring .5s infinite alternate; }
+    @keyframes pulse-ring { from { transform: scale(1); } to { transform: scale(1.08); } }
+
+    /* ── Color picker modal ── */
+    #color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px; }
+    .color-btn {
+      min-height: 96px;
+      border-radius: 18px; color: #fff;
+      font-weight: 900; font-size: 18px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      transition: transform .1s;
+    }
+    .color-btn:active { transform: scale(.94); }
+    .color-btn .emoji { font-size: 36px; }
+
+    /* ── Landing ── */
+    #screen-landing { align-items: center; justify-content: flex-start; padding: max(var(--sat),20px) 16px max(var(--sab),24px); background: #030712; }
+    .landing-inner { width: 100%; max-width: 420px; }
+    .logo-area { text-align: center; padding: 20px 0 24px; }
+    .logo-emoji { font-size: 72px; display: block; animation: float-card 3s ease-in-out infinite; }
+    @keyframes float-card { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .logo-title { font-size: 48px; font-weight: 900; letter-spacing: -2px; }
+    .logo-sub { color: #9ca3af; font-weight: 700; margin-top: 4px; font-size: 15px; }
+    .card-box { background: #111827; border-radius: 24px; padding: 20px; border: 1px solid #1f2937; }
+    .section-title { font-weight: 900; font-size: 16px; text-align: center; margin-bottom: 14px; }
+    .player-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .player-avatar-box {
+      width: 48px; height: 48px; flex-shrink: 0;
+      border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px;
+    }
+    .player-input {
+      flex: 1; padding: 14px 16px;
+      background: #1f2937; border: 2px solid #374151; border-radius: 16px;
+      color: #fff; font-size: 16px; font-weight: 700;
+      outline: none; transition: border-color .2s;
+    }
+    .player-input:focus { border-color: #eab308; }
+    .player-input::placeholder { color: #6b7280; }
+    .remove-btn {
+      width: 48px; height: 48px; flex-shrink: 0;
+      border-radius: 14px; background: #1f2937; border: 2px solid #374151;
+      color: #9ca3af; font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .remove-btn:active { transform: scale(.9); }
+    #add-player-btn {
+      width: 100%; padding: 14px; border-radius: 16px;
+      border: 2px dashed #374151; color: #6b7280; font-weight: 700; font-size: 14px;
+      margin-top: 4px;
+    }
+    #add-player-btn:active { border-color: #9ca3af; color: #9ca3af; }
+    #start-btn {
+      width: 100%; min-height: 62px; margin-top: 16px; border-radius: 18px;
+      font-weight: 900; font-size: 20px; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #start-btn:active { transform: scale(.97); }
+    #start-btn.ready    { background: #eab308; box-shadow: 0 4px 24px rgba(234,179,8,.4); color: #111; }
+    #start-btn.not-ready { background: #1f2937; color: #6b7280; cursor: not-allowed; }
+    #history-btn {
+      width: 100%; min-height: 56px; margin-top: 12px; border-radius: 18px;
+      background: #111827; border: 1px solid #1f2937;
+      font-weight: 700; font-size: 15px; color: #9ca3af;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    #history-btn:active { background: #1f2937; }
+    .rules-box { background: #111827; border-radius: 20px; padding: 16px; border: 1px solid #1f2937; margin-top: 12px; }
+    .rules-box h3 { font-weight: 900; font-size: 13px; text-align: center; margin-bottom: 10px; }
+    .rule-row { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #9ca3af; font-weight: 700; margin-bottom: 6px; }
+    .rule-row .ri { flex-shrink: 0; width: 20px; }
+
+    /* ── Game over ── */
+    #screen-gameover { align-items: center; justify-content: center; background: #030712; padding: max(var(--sat),24px) 16px max(var(--sab),24px); }
+    .gameover-inner { width: 100%; max-width: 420px; }
+
+    /* ── UNO toast ── */
+    #uno-toast {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      pointer-events: none; z-index: 100;
+    }
+    #uno-toast.show { display: flex; }
+    .uno-toast-inner {
+      background: #dc2626; color: #fff; font-weight: 900;
+      font-size: 28px; padding: 20px 40px; border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(220,38,38,.6);
+      text-align: center; animation: slide-up .3s ease-out;
+    }
+    .uno-toast-name { font-size: 16px; opacity: .9; margin-top: 4px; }
+
+    /* ── Shake animation ── */
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+    .shaking { animation: shake .4s ease-in-out; }
+    .playable-lift { transform: translateY(-10px); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ LANDING ══════════════ -->
+<section id="screen-landing" class="screen">
+  <div class="landing-inner">
+    <div class="logo-area">
+      <span class="logo-emoji">🃏</span>
+      <div class="logo-title">UNO <span style="color:#eab308">Quiz</span></div>
+      <div class="logo-sub">Responda para jogar · Erre para comprar</div>
+    </div>
+
+    <div class="card-box">
+      <div class="section-title" id="player-count-title">👥 Jogadores (2/4)</div>
+      <div id="players-list"></div>
+      <button id="add-player-btn" onclick="addPlayer()">+ Adicionar Jogador</button>
+      <button id="start-btn" class="not-ready" onclick="startGame()">Preencha os nomes</button>
+    </div>
+
+    <button id="history-btn" onclick="showHistory()">📋 Histórico de Partidas</button>
+
+    <div class="rules-box">
+      <h3>📜 Como Jogar</h3>
+      <div class="rule-row"><span class="ri">🎯</span><span>Toque em uma carta jogável para responder uma pergunta</span></div>
+      <div class="rule-row"><span class="ri">✅</span><span>Acertou → a carta é jogada no descarte!</span></div>
+      <div class="rule-row"><span class="ri">❌</span><span>Errou → compre uma carta e passe a vez</span></div>
+      <div class="rule-row"><span class="ri">⊘</span><span>Skip pula o próximo jogador</span></div>
+      <div class="rule-row"><span class="ri">↺</span><span>Reverse inverte a direção</span></div>
+      <div class="rule-row"><span class="ri">+2</span><span>Próximo jogador compra 2 cartas</span></div>
+      <div class="rule-row"><span class="ri">🏆</span><span>Quem esvaziar a mão primeiro vence!</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ GAME ══════════════ -->
+<section id="screen-game" class="screen">
+  <div id="top-bar">
+    <button class="quit-btn" onclick="confirmQuit()">✕</button>
+    <div class="msg">
+      <div class="msg-main" id="msg-main">—</div>
+      <div class="msg-sub"  id="msg-sub">—</div>
+    </div>
+    <div class="color-pill" id="color-pill">—</div>
+  </div>
+
+  <div id="others-strip"></div>
+
+  <div id="board-center">
+    <div id="board-cards">
+      <!-- Deck -->
+      <div class="board-card-wrap">
+        <button id="deck-btn" onclick="handleDraw()" style="background:none;border:none;padding:0;display:block;">
+          <div class="card-back lg" style="cursor:pointer;"></div>
+        </button>
+        <div class="board-label">COMPRAR</div>
+      </div>
+      <!-- Discard -->
+      <div class="board-card-wrap">
+        <div class="discard-stack">
+          <div id="discard-under" style="display:none;"></div>
+          <div id="discard-top"></div>
+        </div>
+        <div class="board-label">DESCARTE</div>
+      </div>
+    </div>
+    <!-- Color indicator -->
+    <div id="color-badge" style="padding:8px 20px;border-radius:100px;font-weight:900;font-size:14px;"></div>
+  </div>
+
+  <div id="hand-panel">
+    <div id="player-info"></div>
+    <div id="hand-scroll"><div id="hand-inner"></div></div>
+    <button id="draw-btn" onclick="handleDraw()">🃏 Comprar Carta</button>
+  </div>
+</section>
+
+<!-- ══════════════ QUESTION MODAL ══════════════ -->
+<div id="modal-question" class="modal-backdrop">
+  <div class="modal-sheet">
+    <div id="q-header">
+      <div id="q-card-preview"></div>
+      <div style="flex:1;min-width:0;">
+        <div id="q-category" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.55);"></div>
+        <div id="q-player-name" style="font-weight:900;font-size:15px;margin-top:2px;"></div>
+      </div>
+      <div id="q-timer-circle">15</div>
+    </div>
+    <div id="q-timer-bar"><div id="q-timer-fill" style="width:100%;background:#22c55e;"></div></div>
+    <div id="q-text"></div>
+    <div id="q-options"></div>
+    <div id="q-result" style="display:none;"></div>
+    <button id="q-confirm" style="display:none;" onclick="confirmAnswer()"></button>
+  </div>
+</div>
+
+<!-- ══════════════ COLOR PICKER ══════════════ -->
+<div id="modal-color" class="modal-backdrop">
+  <div class="modal-sheet">
+    <div style="text-align:center;padding:20px 16px 4px;">
+      <div style="font-weight:900;font-size:22px;">Escolha uma cor</div>
+      <div id="color-player-name" style="color:#9ca3af;font-size:14px;font-weight:700;margin-top:4px;"></div>
+    </div>
+    <div id="color-grid">
+      <button class="color-btn" style="background:#dc2626;" onclick="pickColor('red')"><span class="emoji">🔴</span>Vermelho</button>
+      <button class="color-btn" style="background:#2563eb;" onclick="pickColor('blue')"><span class="emoji">🔵</span>Azul</button>
+      <button class="color-btn" style="background:#16a34a;" onclick="pickColor('green')"><span class="emoji">🟢</span>Verde</button>
+      <button class="color-btn" style="background:#ca8a04;" onclick="pickColor('yellow')"><span class="emoji">🟡</span>Amarelo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ GAME OVER ══════════════ -->
+<section id="screen-gameover" class="screen">
+  <div class="gameover-inner" id="gameover-content"></div>
+</section>
+
+<!-- ══════════════ UNO TOAST ══════════════ -->
+<div id="uno-toast">
+  <div class="uno-toast-inner">
+    🃏 UNO!
+    <div class="uno-toast-name" id="uno-toast-name"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════
+const QUESTIONS = [
+  { text:'Qual é o elemento químico mais abundante no universo?', options:['Oxigênio','Hidrogênio','Carbono','Nitrogênio'], correct:1, category:'🔬 Ciência' },
+  { text:'Quantos planetas existem no Sistema Solar?', options:['7','8','9','10'], correct:1, category:'🔬 Ciência' },
+  { text:'Qual é o gás que as plantas absorvem durante a fotossíntese?', options:['Oxigênio','Nitrogênio','Dióxido de carbono','Hidrogênio'], correct:2, category:'🔬 Ciência' },
+  { text:'Quantos ossos tem o corpo humano adulto?', options:['206','208','210','204'], correct:0, category:'🔬 Ciência' },
+  { text:'Qual é a velocidade da luz no vácuo?', options:['300.000 km/s','150.000 km/s','450.000 km/s','250.000 km/s'], correct:0, category:'🔬 Ciência' },
+  { text:'Qual planeta é conhecido como Planeta Vermelho?', options:['Vênus','Júpiter','Marte','Saturno'], correct:2, category:'🔬 Ciência' },
+  { text:'Qual é o maior órgão do corpo humano?', options:['Fígado','Pulmão','Pele','Intestino'], correct:2, category:'🔬 Ciência' },
+  { text:'Qual é o símbolo químico do ouro?', options:['Go','Or','Au','Ag'], correct:2, category:'🔬 Ciência' },
+  { text:'O DNA se encontra em qual parte da célula?', options:['Membrana','Núcleo','Ribossomo','Mitocôndria'], correct:1, category:'🔬 Ciência' },
+  { text:'Qual é o planeta mais quente do Sistema Solar?', options:['Mercúrio','Vênus','Marte','Júpiter'], correct:1, category:'🔬 Ciência' },
+  { text:'Qual é a capital do Brasil?', options:['São Paulo','Rio de Janeiro','Brasília','Salvador'], correct:2, category:'🌍 Geografia' },
+  { text:'Qual é o maior país do mundo em área?', options:['China','Canadá','Brasil','Rússia'], correct:3, category:'🌍 Geografia' },
+  { text:'Qual é o maior oceano do mundo?', options:['Atlântico','Índico','Ártico','Pacífico'], correct:3, category:'🌍 Geografia' },
+  { text:'Qual é o rio mais longo do mundo?', options:['Amazonas','Nilo','Yangtzé','Mississippi'], correct:1, category:'🌍 Geografia' },
+  { text:'Qual é a montanha mais alta do mundo?', options:['K2','Everest','Aconcágua','Kilimanjaro'], correct:1, category:'🌍 Geografia' },
+  { text:'Em qual continente fica o Egito?', options:['Ásia','Europa','África','Oriente Médio'], correct:2, category:'🌍 Geografia' },
+  { text:'Qual país tem mais habitantes no mundo?', options:['Índia','China','EUA','Brasil'], correct:0, category:'🌍 Geografia' },
+  { text:'Qual é a capital da Argentina?', options:['Córdoba','Rosário','Buenos Aires','Mendoza'], correct:2, category:'🌍 Geografia' },
+  { text:'Qual é o menor país do mundo?', options:['Mônaco','San Marino','Vaticano','Liechtenstein'], correct:2, category:'🌍 Geografia' },
+  { text:'Qual é o deserto mais quente do mundo?', options:['Gobi','Atacama','Saara','Namib'], correct:2, category:'🌍 Geografia' },
+  { text:'Em que ano o Brasil proclamou sua independência?', options:['1808','1822','1889','1500'], correct:1, category:'📜 História' },
+  { text:'Quem descobriu o Brasil?', options:['Cristóvão Colombo','Pedro Álvares Cabral','Vasco da Gama','Fernão de Magalhães'], correct:1, category:'📜 História' },
+  { text:'Em que ano ocorreu a Segunda Guerra Mundial?', options:['1914–1918','1939–1945','1935–1942','1941–1947'], correct:1, category:'📜 História' },
+  { text:'Quem foi o primeiro presidente do Brasil?', options:['Dom Pedro II','Getúlio Vargas','Deodoro da Fonseca','Floriano Peixoto'], correct:2, category:'📜 História' },
+  { text:'Em que ano o homem chegou à Lua?', options:['1967','1968','1969','1970'], correct:2, category:'📜 História' },
+  { text:'Qual faraó ordenou a construção das pirâmides de Gizé?', options:['Tutancâmon','Cleópatra','Quéops','Ramsés II'], correct:2, category:'📜 História' },
+  { text:'Quando ocorreu a Revolução Francesa?', options:['1776','1789','1799','1804'], correct:1, category:'📜 História' },
+  { text:'Em que país ocorreu a Revolução Industrial?', options:['França','Alemanha','EUA','Inglaterra'], correct:3, category:'📜 História' },
+  { text:'Qual banda gravou "Bohemian Rhapsody"?', options:['The Beatles','Led Zeppelin','Queen','Rolling Stones'], correct:2, category:'🎬 Cultura Pop' },
+  { text:'Em qual cidade fica a Torre Eiffel?', options:['Lyon','Marseille','Paris','Bordeaux'], correct:2, category:'🎬 Cultura Pop' },
+  { text:'Quem pintou a Mona Lisa?', options:['Michelangelo','Rafael','Leonardo da Vinci','Caravaggio'], correct:2, category:'🎬 Cultura Pop' },
+  { text:'Qual é o esporte mais popular do Brasil?', options:['Vôlei','Basquete','Futebol','Natação'], correct:2, category:'🎬 Cultura Pop' },
+  { text:'Quantas cores tem o arco-íris?', options:['5','6','7','8'], correct:2, category:'🎬 Cultura Pop' },
+  { text:'Qual é a moeda do Brasil?', options:['Peso','Dólar','Euro','Real'], correct:3, category:'🎬 Cultura Pop' },
+  { text:'Quanto é 7 × 8?', options:['54','56','58','63'], correct:1, category:'🔢 Matemática' },
+  { text:'Qual é a raiz quadrada de 144?', options:['11','12','13','14'], correct:1, category:'🔢 Matemática' },
+  { text:'Quanto é 25% de 200?', options:['40','45','50','55'], correct:2, category:'🔢 Matemática' },
+  { text:'Qual é o número pi aproximado?', options:['3,14','3,16','3,12','3,18'], correct:0, category:'🔢 Matemática' },
+  { text:'Quanto é 2 elevado à 10?', options:['512','1024','2048','256'], correct:1, category:'🔢 Matemática' },
+  { text:'Quantos lados tem um hexágono?', options:['5','6','7','8'], correct:1, category:'🔢 Matemática' },
+  { text:'Qual é o próximo número primo após 11?', options:['12','13','14','15'], correct:1, category:'🔢 Matemática' },
+  { text:'Quanto é 15% de 300?', options:['40','42','45','50'], correct:2, category:'🔢 Matemática' },
+  { text:'Qual é o animal mais rápido do mundo?', options:['Guepardo','Falcão-peregrino','Leão','Águia'], correct:0, category:'🐾 Natureza' },
+  { text:'Qual é o maior animal do mundo?', options:['Elefante africano','Tubarão-baleia','Baleia-azul','Girafa'], correct:2, category:'🐾 Natureza' },
+  { text:'Quantas patas tem uma aranha?', options:['6','7','8','10'], correct:2, category:'🐾 Natureza' },
+  { text:'Qual é o único mamífero que voa?', options:['Ornitorrinco','Morcego','Esquilo-voador','Peixe-voador'], correct:1, category:'🐾 Natureza' },
+  { text:'Qual árvore produz bolotas?', options:['Pinheiro','Carvalho','Bordo','Castanheiro'], correct:1, category:'🐾 Natureza' },
+];
+
+const AVATARS = ['🦁','🐯','🦊','🐺','🦝','🐻','🐼','🦄','🐉','🦋','🦅','🐬'];
+
+const C = {
+  red:    { bg:'#dc2626', border:'#ef4444', label:'Vermelho', cls:'cc-red'    },
+  blue:   { bg:'#2563eb', border:'#60a5fa', label:'Azul',     cls:'cc-blue'   },
+  green:  { bg:'#16a34a', border:'#4ade80', label:'Verde',    cls:'cc-green'  },
+  yellow: { bg:'#ca8a04', border:'#facc15', label:'Amarelo',  cls:'cc-yellow' },
+  wild:   { bg:'#1f2937', border:'#a855f7', label:'Coringa',  cls:'cc-wild'   },
+};
+const PLAYER_COLORS = ['#dc2626','#2563eb','#16a34a','#ca8a04'];
+const ACTION_LABEL = { number:'', skip:'⊘', reverse:'↺', draw2:'+2', wild:'★', wild4:'+4' };
+
+// ══════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════
+const uid = () => Math.random().toString(36).slice(2, 9);
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const clone = obj => JSON.parse(JSON.stringify(obj));
+
+// ══════════════════════════════════════════════════
+// DECK
+// ══════════════════════════════════════════════════
+function buildDeck() {
+  const qs = shuffle(QUESTIONS);
+  let qi = 0;
+  const nq = () => qs[qi++ % qs.length];
+  const mk = (color, action, value) => ({ id: uid(), color, action, value, question: nq() });
+  const cards = [];
+  for (const color of ['red','blue','green','yellow']) {
+    cards.push(mk(color,'number',0));
+    for (let v = 1; v <= 9; v++) { cards.push(mk(color,'number',v)); cards.push(mk(color,'number',v)); }
+    for (let i = 0; i < 2; i++) { cards.push(mk(color,'skip',null)); cards.push(mk(color,'reverse',null)); cards.push(mk(color,'draw2',null)); }
+  }
+  for (let i = 0; i < 4; i++) cards.push(mk('wild','wild',null));
+  for (let i = 0; i < 4; i++) cards.push(mk('wild','wild4',null));
+  return shuffle(cards);
+}
+
+// ══════════════════════════════════════════════════
+// GAME ENGINE
+// ══════════════════════════════════════════════════
+function createGame(names) {
+  const deck = buildDeck();
+  const players = names.map((name, i) => ({ id: uid(), name, avatar: AVATARS[i % AVATARS.length], hand: [], score: 0 }));
+  let di = 0;
+  for (let c = 0; c < 7; c++) for (const p of players) p.hand.push(deck[di++]);
+  let ti = di;
+  while (deck[ti].action !== 'number') ti++;
+  const top = deck[ti];
+  const remaining = deck.filter((_,i) => i >= di && i !== ti);
+  return { players, currentPlayerIndex:0, direction:1, discardPile:[top], deck:remaining, roundNumber:1, message:`Vez de ${players[0].name}` };
+}
+
+function canPlay(card, top, curColor) {
+  if (card.action === 'wild' || card.action === 'wild4') return true;
+  if (card.color === curColor) return true;
+  if (card.color === top.color) return true;
+  if (card.action !== 'number' && card.action === top.action) return true;
+  if (card.action === 'number' && top.action === 'number' && card.value === top.value) return true;
+  return false;
+}
+
+function getCurrentColor(G) {
+  return G.discardPile[G.discardPile.length - 1]?.color ?? 'red';
+}
+
+function drawCardsFor(G, playerId, count) {
+  const s = clone(G);
+  const p = s.players.find(p => p.id === playerId);
+  if (!p) return s;
+  if (s.deck.length < count) {
+    const top = s.discardPile.pop();
+    s.deck = shuffle(s.discardPile);
+    s.discardPile = [top];
+  }
+  p.hand.push(...s.deck.splice(0, count));
+  return s;
+}
+
+function nextPlayerFn(G) {
+  const s = clone(G);
+  const n = s.players.length;
+  s.currentPlayerIndex = ((s.currentPlayerIndex + s.direction) % n + n) % n;
+  s.message = `Vez de ${s.players[s.currentPlayerIndex].name}`;
+  return s;
+}
+
+function applyEffect(G, card, chosenColor) {
+  let s = clone(G);
+  const n = s.players.length;
+  s.discardPile.push(card);
+  const nextIdx = () => ((s.currentPlayerIndex + s.direction) % n + n) % n;
+
+  switch (card.action) {
+    case 'skip': {
+      const sk = s.players[nextIdx()];
+      s.message = `⊘ ${sk.name} foi pulado!`;
+      s = nextPlayerFn(s);
+      break;
+    }
+    case 'reverse':
+      s.direction = s.direction === 1 ? -1 : 1;
+      s.message = '↺ Sentido invertido!';
+      if (n === 2) s = nextPlayerFn(s);
+      break;
+    case 'draw2': {
+      const ti = nextIdx(), tgt = s.players[ti];
+      s = drawCardsFor(s, tgt.id, 2);
+      s.message = `+2 ${tgt.name} comprou 2 cartas!`;
+      s = nextPlayerFn(s);
+      break;
+    }
+    case 'wild':
+      s.discardPile[s.discardPile.length - 1] = { ...card, color: chosenColor || 'red' };
+      s.message = `★ Cor: ${C[chosenColor]?.label}`;
+      break;
+    case 'wild4': {
+      s.discardPile[s.discardPile.length - 1] = { ...card, color: chosenColor || 'red' };
+      const ti = nextIdx(), tgt = s.players[ti];
+      s = drawCardsFor(s, tgt.id, 4);
+      s.message = `+4 ${tgt.name} comprou 4 cartas!`;
+      s = nextPlayerFn(s);
+      break;
+    }
+  }
+  return s;
+}
+
+function checkWinner(G) {
+  return G.players.find(p => p.hand.length === 0) || null;
+}
+
+function calcScores(G, winner) {
+  const s = clone(G);
+  let total = 0;
+  for (const p of s.players) if (p.id !== winner.id)
+    for (const c of p.hand)
+      total += c.action === 'number' ? (c.value || 0) : (c.action === 'wild' || c.action === 'wild4') ? 50 : 20;
+  s.players = s.players.map(p => p.id === winner.id ? { ...p, score: p.score + total } : p);
+  return s;
+}
+
+// ══════════════════════════════════════════════════
+// APP STATE
+// ══════════════════════════════════════════════════
+let G = null;            // GameState
+let PHASE = 'landing';   // 'landing'|'playing'|'question'|'colorpick'|'gameover'
+let ACTIVE_CARD = null;  // card being played
+let START_TIME = 0;
+let playerNames = ['', ''];
+
+// Question timer state
+let Q = { selected: null, revealed: false, timedOut: false, timeLeft: 15, interval: null };
+
+// ══════════════════════════════════════════════════
+// SCREEN NAVIGATION
+// ══════════════════════════════════════════════════
+function showScreen(name) {
+  ['landing','game','gameover'].forEach(s => {
+    const el = document.getElementById('screen-' + s);
+    if (s === name) { el.classList.add('active'); }
+    else            { el.classList.remove('active'); }
+  });
+}
+
+function openModal(name) {
+  document.getElementById('modal-question').classList.toggle('open', name === 'question');
+  document.getElementById('modal-color').classList.toggle('open', name === 'color');
+}
+
+function closeModals() {
+  document.getElementById('modal-question').classList.remove('open');
+  document.getElementById('modal-color').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════════
+// CARD RENDERING
+// ══════════════════════════════════════════════════
+function cardLabel(card) {
+  return card.action === 'number' ? String(card.value) : ACTION_LABEL[card.action];
+}
+
+function cardCenter(card) {
+  if (card.color === 'wild' && card.action === 'wild')  return '🃏';
+  if (card.color === 'wild' && card.action === 'wild4') return '🌈';
+  return cardLabel(card);
+}
+
+function makeCardEl(card, size, opts = {}) {
+  const { onclick, playable = true, lifted = false } = opts;
+  const lbl = cardLabel(card);
+  const center = cardCenter(card);
+  const cfg = C[card.color];
+
+  const el = document.createElement('button');
+  el.className = `card card-${size} ${cfg.cls}`;
+  el.style.cssText = `opacity:${playable ? '1' : '0.38'};transform:${lifted ? 'translateY(-10px)' : 'none'};`;
+  if (!playable || !onclick) el.disabled = !onclick;
+  if (onclick) el.addEventListener('click', onclick);
+
+  el.innerHTML = `
+    <div class="inner-oval"></div>
+    <span class="lbl-tl">${lbl}</span>
+    <span class="lbl-center">${center}</span>
+    <span class="lbl-br">${lbl}</span>
+  `;
+  return el;
+}
+
+function makeFaceDownEl(size, onclick) {
+  const el = document.createElement('div');
+  el.className = `card-back ${size}`;
+  if (onclick) { el.style.cursor = 'pointer'; el.addEventListener('click', onclick); }
+  el.textContent = 'UNO';
+  return el;
+}
+
+// ══════════════════════════════════════════════════
+// GAME RENDER
+// ══════════════════════════════════════════════════
+function renderGame() {
+  const curPlayer = G.players[G.currentPlayerIndex];
+  const top = G.discardPile[G.discardPile.length - 1];
+  const curColor = getCurrentColor(G);
+  const cfg = C[curColor];
+  const playable = curPlayer.hand.filter(c => canPlay(c, top, curColor));
+
+  // ── Top bar ──
+  document.getElementById('top-bar').style.background = cfg.bg;
+  document.getElementById('msg-main').textContent = G.message;
+  document.getElementById('msg-sub').textContent = `Rodada ${G.roundNumber} · ${G.direction === 1 ? '▶' : '◀'}`;
+  document.getElementById('color-pill').textContent = cfg.label;
+
+  // ── Other players ──
+  const othersEl = document.getElementById('others-strip');
+  othersEl.innerHTML = '';
+  G.players.forEach((p, i) => {
+    if (i === G.currentPlayerIndex) return;
+    const div = document.createElement('div');
+    div.className = 'other-player';
+    div.innerHTML = `<span class="avatar">${p.avatar}</span><div><div class="pname">${p.name}</div><div class="pcards">🃏 ${p.hand.length}</div></div>`;
+    othersEl.appendChild(div);
+  });
+
+  // ── Board ──
+  // Deck button (already has onclick in HTML, but re-style based on phase)
+  document.getElementById('deck-btn').style.opacity = PHASE === 'playing' ? '1' : '0.5';
+
+  // Discard
+  const discardTop = document.getElementById('discard-top');
+  const discardUnder = document.getElementById('discard-under');
+  discardTop.innerHTML = '';
+  discardTop.appendChild(makeCardEl(top, 'lg'));
+
+  if (G.discardPile.length > 1) {
+    const prev = G.discardPile[G.discardPile.length - 2];
+    discardUnder.style.display = 'block';
+    discardUnder.innerHTML = '';
+    discardUnder.appendChild(makeCardEl(prev, 'lg'));
+  } else {
+    discardUnder.style.display = 'none';
+  }
+
+  // Color badge
+  const badge = document.getElementById('color-badge');
+  badge.style.background = cfg.bg;
+  badge.textContent = `Cor atual: ${cfg.label}`;
+
+  // ── Player info ──
+  const piEl = document.getElementById('player-info');
+  piEl.innerHTML = `
+    <div class="p-avatar" style="background:${PLAYER_COLORS[G.currentPlayerIndex]};">${curPlayer.avatar}</div>
+    <div>
+      <div class="p-name">${curPlayer.name}</div>
+      <div class="p-stats">
+        ${curPlayer.hand.length} carta${curPlayer.hand.length !== 1 ? 's' : ''} ·
+        <span style="color:${playable.length > 0 ? '#4ade80' : '#f87171'};font-weight:900;">${playable.length} jogável${playable.length !== 1 ? 'is' : ''}</span>
+      </div>
+    </div>
+    ${curPlayer.hand.length === 1 ? '<div class="uno-badge" style="margin-left:auto;">UNO! 🃏</div>' : ''}
+  `;
+
+  // ── Hand ──
+  const handEl = document.getElementById('hand-inner');
+  handEl.innerHTML = '';
+  curPlayer.hand.forEach((card, idx) => {
+    const isPlayable = canPlay(card, top, curColor);
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `position:relative;z-index:${idx};${idx > 0 ? 'margin-left:-22px;' : ''}flex-shrink:0;`;
+
+    const cardEl = makeCardEl(card, 'xl', {
+      playable: isPlayable,
+      lifted: isPlayable,
+      onclick: PHASE === 'playing' ? () => tapCard(card, cardEl) : null,
+    });
+    wrapper.appendChild(cardEl);
+    handEl.appendChild(wrapper);
+  });
+
+  // ── Draw button ──
+  const drawBtn = document.getElementById('draw-btn');
+  drawBtn.disabled = PHASE !== 'playing';
+  if (playable.length === 0) {
+    drawBtn.className = 'can-draw';
+    drawBtn.textContent = '🃏 Comprar Carta';
+    drawBtn.style.background = '#d97706';
+    drawBtn.style.boxShadow = '0 4px 20px rgba(217,119,6,.4)';
+    drawBtn.style.color = '#fff';
+    drawBtn.style.border = 'none';
+  } else {
+    drawBtn.className = 'can-pass';
+    drawBtn.textContent = '⏭ Passar / Comprar';
+    drawBtn.style.background = '#1f2937';
+    drawBtn.style.boxShadow = 'none';
+    drawBtn.style.color = '#9ca3af';
+    drawBtn.style.border = '2px solid #374151';
+  }
+}
+
+// ══════════════════════════════════════════════════
+// GAME ACTIONS
+// ══════════════════════════════════════════════════
+function tapCard(card, el) {
+  if (PHASE !== 'playing') return;
+  const top = G.discardPile[G.discardPile.length - 1];
+  const curColor = getCurrentColor(G);
+
+  if (!canPlay(card, top, curColor)) {
+    el.classList.add('shaking');
+    setTimeout(() => el.classList.remove('shaking'), 420);
+    return;
+  }
+
+  ACTIVE_CARD = card;
+  openQuestion(card);
+}
+
+function handleDraw() {
+  if (PHASE !== 'playing') return;
+  const curPlayer = G.players[G.currentPlayerIndex];
+  G = nextPlayerFn(drawCardsFor(G, curPlayer.id, 1));
+  renderGame();
+}
+
+function confirmQuit() {
+  if (confirm('Sair da partida atual?')) {
+    closeModals();
+    stopQTimer();
+    G = null; PHASE = 'landing'; ACTIVE_CARD = null;
+    showScreen('landing');
+  }
+}
+
+// ══════════════════════════════════════════════════
+// QUESTION MODAL
+// ══════════════════════════════════════════════════
+function openQuestion(card) {
+  PHASE = 'question';
+  Q = { selected: null, revealed: false, timedOut: false, timeLeft: 15, interval: null };
+
+  const curPlayer = G.players[G.currentPlayerIndex];
+  const q = card.question;
+  const cfg = C[card.color];
+
+  // Header
+  document.getElementById('q-header').style.background = cfg.bg;
+  const preview = document.getElementById('q-card-preview');
+  preview.innerHTML = '';
+  preview.appendChild(makeCardEl(card, 'md'));
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-player-name').textContent = `${curPlayer.avatar} ${curPlayer.name}`;
+
+  // Timer
+  const timerCircle = document.getElementById('q-timer-circle');
+  timerCircle.textContent = '15';
+  timerCircle.className = '';
+  document.getElementById('q-timer-fill').style.width = '100%';
+  document.getElementById('q-timer-fill').style.background = '#22c55e';
+
+  // Question
+  document.getElementById('q-text').textContent = q.text;
+
+  // Options
+  renderQOptions();
+
+  // Result / confirm hidden
+  document.getElementById('q-result').style.display = 'none';
+  document.getElementById('q-confirm').style.display = 'none';
+
+  openModal('question');
+  startQTimer();
+  renderGame(); // refresh hand to grey out cards
+}
+
+function startQTimer() {
+  stopQTimer();
+  const LIMIT = 15;
+  Q.interval = setInterval(() => {
+    Q.timeLeft--;
+    const pct = (Q.timeLeft / LIMIT) * 100;
+
+    const circle = document.getElementById('q-timer-circle');
+    circle.textContent = Q.timeLeft;
+    if (Q.timeLeft <= 4)      circle.className = 'danger';
+    else if (Q.timeLeft <= 8) circle.className = 'warn';
+    else                       circle.className = '';
+
+    const fill = document.getElementById('q-timer-fill');
+    fill.style.width = pct + '%';
+    fill.style.background = pct > 50 ? '#22c55e' : pct > 25 ? '#fbbf24' : '#ef4444';
+
+    if (Q.timeLeft <= 0) {
+      stopQTimer();
+      Q.timedOut = true;
+      Q.revealed = true;
+      renderQOptions();
+      showQResult();
+    }
+  }, 1000);
+}
+
+function stopQTimer() {
+  if (Q.interval) { clearInterval(Q.interval); Q.interval = null; }
+}
+
+function selectOption(idx) {
+  if (Q.revealed) return;
+  stopQTimer();
+  Q.selected = idx;
+  Q.revealed = true;
+  renderQOptions();
+  showQResult();
+}
+
+function renderQOptions() {
+  const q = ACTIVE_CARD.question;
+  const el = document.getElementById('q-options');
+  el.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'q-opt';
+    let extra = '';
+    if (Q.revealed) {
+      if (i === q.correct)      { btn.classList.add('correct'); extra = '<span class="opt-icon">✓</span>'; }
+      else if (i === Q.selected) { btn.classList.add('wrong');   extra = '<span class="opt-icon">✗</span>'; }
+      else                       { btn.classList.add('dimmed'); }
+    }
+    btn.innerHTML = `<span class="opt-letter">${['A','B','C','D'][i]}</span><span style="flex:1;">${opt}</span>${extra}`;
+    if (!Q.revealed) btn.addEventListener('click', () => selectOption(i));
+    el.appendChild(btn);
+  });
+}
+
+function showQResult() {
+  const q = ACTIVE_CARD.question;
+  const isCorrect = !Q.timedOut && Q.selected === q.correct;
+  const resultEl = document.getElementById('q-result');
+  const confirmEl = document.getElementById('q-confirm');
+
+  resultEl.style.display = 'block';
+  resultEl.style.color = Q.timedOut ? '#fb923c' : isCorrect ? '#4ade80' : '#f87171';
+  resultEl.textContent = Q.timedOut ? '⏱ Tempo esgotado! Compre uma carta.' :
+                         isCorrect ? '🎉 Correto! Jogue sua carta!' :
+                                     '❌ Errado! Compre uma carta.';
+
+  confirmEl.style.display = 'flex';
+  confirmEl.className = isCorrect ? 'btn-green' : 'btn-red';
+  confirmEl.textContent = isCorrect ? '🃏 Jogar Carta!' : '🃏 Comprar Carta';
+}
+
+function confirmAnswer() {
+  const q = ACTIVE_CARD.question;
+  const isCorrect = !Q.timedOut && Q.selected === q.correct;
+  stopQTimer();
+  closeModals();
+  PHASE = 'playing';
+
+  if (!isCorrect) {
+    G = nextPlayerFn(drawCardsFor(G, G.players[G.currentPlayerIndex].id, 1));
+    ACTIVE_CARD = null;
+    renderGame();
+    return;
+  }
+
+  // Remove card from hand
+  const curPlayer = G.players[G.currentPlayerIndex];
+  G = {
+    ...G,
+    players: G.players.map(p => p.id === curPlayer.id
+      ? { ...p, hand: p.hand.filter(c => c.id !== ACTIVE_CARD.id) }
+      : p)
+  };
+
+  // Check winner
+  const winner = checkWinner(G);
+  if (winner) {
+    G = calcScores(G, winner);
+    showGameOver(winner);
+    ACTIVE_CARD = null;
+    return;
+  }
+
+  // Wild → pick color first
+  if (ACTIVE_CARD.action === 'wild' || ACTIVE_CARD.action === 'wild4') {
+    PHASE = 'colorpick';
+    document.getElementById('color-player-name').textContent = `${curPlayer.name} jogou um Coringa 🃏`;
+    openModal('color');
+    renderGame();
+    return;
+  }
+
+  // Normal card → apply effect, advance turn
+  G = nextPlayerFn(applyEffect(G, ACTIVE_CARD));
+  ACTIVE_CARD = null;
+  checkUnoAlert();
+  renderGame();
+}
+
+function pickColor(color) {
+  if (!ACTIVE_CARD) return;
+  closeModals();
+  PHASE = 'playing';
+  G = nextPlayerFn(applyEffect(G, ACTIVE_CARD, color));
+  ACTIVE_CARD = null;
+  checkUnoAlert();
+  renderGame();
+}
+
+function checkUnoAlert() {
+  for (const p of G.players) {
+    if (p.hand.length === 1) {
+      showUnoToast(p.name);
+      break;
+    }
+  }
+}
+
+function showUnoToast(name) {
+  const toast = document.getElementById('uno-toast');
+  document.getElementById('uno-toast-name').textContent = name;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2400);
+}
+
+// ══════════════════════════════════════════════════
+// GAME OVER
+// ══════════════════════════════════════════════════
+function showGameOver(winner) {
+  PHASE = 'gameover';
+  closeModals();
+  stopQTimer();
+
+  const duration = Math.floor((Date.now() - START_TIME) / 1000);
+  const mins = Math.floor(duration / 60);
+  const secs = duration % 60;
+  const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+  // Save to history
+  const record = {
+    id: uid(), date: new Date().toLocaleDateString('pt-BR'),
+    winner: winner.name,
+    duration,
+    players: G.players.map(p => ({ name: p.name, avatar: p.avatar, score: p.score, cardsLeft: p.hand.length })),
+  };
+  const history = JSON.parse(localStorage.getItem('uno-history') || '[]');
+  history.unshift(record);
+  localStorage.setItem('uno-history', JSON.stringify(history.slice(0, 50)));
+
+  const sorted = [...G.players].sort((a, b) => b.score - a.score);
+  const rankHtml = sorted.map((p, i) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 20px;background:#1f2937;border-radius:16px;margin-bottom:10px;">
+      <span style="font-size:24px;min-width:32px;text-align:center;">${['🥇','🥈','🥉','4️⃣'][i]}</span>
+      <span style="font-size:26px;">${p.avatar}</span>
+      <div style="flex:1;">
+        <div style="font-weight:900;font-size:15px;">${p.name}</div>
+        <div style="font-size:12px;color:#9ca3af;">${p.cardsLeft ?? p.hand.length} cartas restantes</div>
+      </div>
+      <div style="font-weight:900;font-size:18px;color:#fbbf24;">${p.score} pts</div>
+    </div>
+  `).join('');
+
+  document.getElementById('gameover-content').innerHTML = `
+    <div style="text-align:center;padding:32px 0 24px;">
+      <div style="font-size:72px;margin-bottom:8px;">🏆</div>
+      <div style="font-weight:900;font-size:32px;">${winner.avatar} ${winner.name}</div>
+      <div style="color:#9ca3af;font-size:15px;margin-top:4px;">Venceu em ${timeStr}!</div>
+    </div>
+    <div style="margin-bottom:16px;">${rankHtml}</div>
+    <button onclick="startGame(true)" style="width:100%;min-height:62px;border-radius:18px;background:#eab308;color:#111;font-weight:900;font-size:20px;margin-bottom:12px;">🎮 Jogar Novamente</button>
+    <button onclick="goLanding()" style="width:100%;min-height:56px;border-radius:18px;background:#1f2937;border:1px solid #374151;color:#9ca3af;font-weight:700;font-size:16px;">🏠 Voltar ao Início</button>
+  `;
+  showScreen('gameover');
+}
+
+// ══════════════════════════════════════════════════
+// LANDING
+// ══════════════════════════════════════════════════
+function renderLanding() {
+  const list = document.getElementById('players-list');
+  list.innerHTML = '';
+  playerNames.forEach((name, i) => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <div class="player-avatar-box" style="background:${PLAYER_COLORS[i]};">${AVATARS[i % AVATARS.length]}</div>
+      <input class="player-input" type="text" placeholder="Jogador ${i+1}" maxlength="20" value="${name}" oninput="updateName(${i}, this.value)" onkeydown="if(event.key==='Enter') tryStart()" />
+      ${playerNames.length > 2 ? `<button class="remove-btn" onclick="removePlayer(${i})">✕</button>` : ''}
+    `;
+    list.appendChild(row);
+  });
+
+  document.getElementById('player-count-title').textContent = `👥 Jogadores (${playerNames.length}/4)`;
+  document.getElementById('add-player-btn').style.display = playerNames.length < 4 ? 'block' : 'none';
+
+  const canStart = playerNames.every(n => n.trim().length > 0);
+  const btn = document.getElementById('start-btn');
+  btn.className = canStart ? 'ready' : 'not-ready';
+  btn.textContent = canStart ? '🎮 Iniciar Jogo!' : 'Preencha os nomes';
+}
+
+function updateName(i, val) {
+  playerNames[i] = val;
+  const canStart = playerNames.every(n => n.trim().length > 0);
+  const btn = document.getElementById('start-btn');
+  btn.className = canStart ? 'ready' : 'not-ready';
+  btn.textContent = canStart ? '🎮 Iniciar Jogo!' : 'Preencha os nomes';
+}
+
+function addPlayer() {
+  if (playerNames.length < 4) { playerNames.push(''); renderLanding(); }
+}
+
+function removePlayer(i) {
+  if (playerNames.length <= 2) return;
+  playerNames.splice(i, 1);
+  renderLanding();
+}
+
+function tryStart() { if (playerNames.every(n => n.trim().length > 0)) startGame(); }
+
+function startGame(sameNames = false) {
+  const names = sameNames
+    ? G?.players.map(p => p.name) || playerNames.map(n => n.trim()).filter(Boolean)
+    : playerNames.map(n => n.trim()).filter(Boolean);
+
+  if (names.length < 2) return;
+  localStorage.setItem('uno-names', JSON.stringify(names));
+
+  G = createGame(names);
+  PHASE = 'playing';
+  ACTIVE_CARD = null;
+  START_TIME = Date.now();
+  closeModals();
+  showScreen('game');
+  renderGame();
+}
+
+function goLanding() {
+  G = null; PHASE = 'landing'; ACTIVE_CARD = null;
+  showScreen('landing');
+  renderLanding();
+}
+
+function showHistory() {
+  const history = JSON.parse(localStorage.getItem('uno-history') || '[]');
+  if (history.length === 0) { alert('Nenhuma partida registrada ainda!'); return; }
+  const msg = history.slice(0, 10).map((r, i) =>
+    `${i+1}. ${r.date} — 🏆 ${r.winner} (${Math.floor(r.duration/60)}m${r.duration%60}s)`
+  ).join('\n');
+  alert('📋 Histórico:\n\n' + msg);
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+(function init() {
+  const saved = localStorage.getItem('uno-names');
+  if (saved) {
+    try { playerNames = JSON.parse(saved).slice(0, 4); } catch(e) {}
+    if (playerNames.length < 2) playerNames = ['', ''];
+  }
+  showScreen('landing');
+  renderLanding();
+})();
+</script>
+</body>
 </html>
