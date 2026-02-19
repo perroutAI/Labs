@@ -374,6 +374,29 @@
     @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
     .shaking { animation: shake .4s ease-in-out; }
     .playable-lift { transform: translateY(-10px); }
+
+    /* ── Quiz mode toggle ── */
+    .quiz-mode-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #1f2937; border-radius: 16px;
+      padding: 14px 16px; margin-bottom: 12px;
+      border: 2px solid #374151;
+    }
+    .quiz-mode-row .qm-label { font-weight: 900; font-size: 15px; }
+    .quiz-mode-row .qm-sub  { font-size: 11px; color: #9ca3af; margin-top: 2px; font-weight: 700; }
+    .toggle-track {
+      width: 54px; height: 30px; border-radius: 100px;
+      background: #374151; position: relative;
+      cursor: pointer; transition: background .25s; flex-shrink: 0;
+    }
+    .toggle-track.on { background: #eab308; }
+    .toggle-knob {
+      position: absolute; top: 3px; left: 3px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #fff; transition: transform .25s;
+      box-shadow: 0 2px 6px rgba(0,0,0,.4);
+    }
+    .toggle-track.on .toggle-knob { transform: translateX(24px); }
   </style>
 </head>
 <body>
@@ -391,6 +414,17 @@
       <div class="section-title" id="player-count-title">👥 Jogadores (2/4)</div>
       <div id="players-list"></div>
       <button id="add-player-btn" onclick="addPlayer()">+ Adicionar Jogador</button>
+
+      <div class="quiz-mode-row">
+        <div>
+          <div class="qm-label">🧠 Modo Quiz</div>
+          <div class="qm-sub" id="qm-sub-text">Responda perguntas para jogar cartas</div>
+        </div>
+        <div id="quiz-toggle" class="toggle-track on" onclick="toggleQuizMode()">
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
+
       <button id="start-btn" class="not-ready" onclick="startGame()">Preencha os nomes</button>
     </div>
 
@@ -398,9 +432,9 @@
 
     <div class="rules-box">
       <h3>📜 Como Jogar</h3>
-      <div class="rule-row"><span class="ri">🎯</span><span>Toque em uma carta jogável para responder uma pergunta</span></div>
-      <div class="rule-row"><span class="ri">✅</span><span>Acertou → a carta é jogada no descarte!</span></div>
-      <div class="rule-row"><span class="ri">❌</span><span>Errou → compre uma carta e passe a vez</span></div>
+      <div id="rule-play" class="rule-row"><span class="ri">🎯</span><span id="rule-play-text">Toque em uma carta jogável para responder uma pergunta</span></div>
+      <div id="rule-correct" class="rule-row"><span class="ri">✅</span><span>Acertou → a carta é jogada no descarte!</span></div>
+      <div id="rule-wrong" class="rule-row"><span class="ri">❌</span><span>Errou → compre uma carta e passe a vez</span></div>
       <div class="rule-row"><span class="ri">⊘</span><span>Skip pula o próximo jogador</span></div>
       <div class="rule-row"><span class="ri">↺</span><span>Reverse inverte a direção</span></div>
       <div class="rule-row"><span class="ri">+2</span><span>Próximo jogador compra 2 cartas</span></div>
@@ -712,6 +746,7 @@ let PHASE = 'landing';   // 'landing'|'playing'|'question'|'colorpick'|'gameover
 let ACTIVE_CARD = null;  // card being played
 let START_TIME = 0;
 let playerNames = ['', ''];
+let WITH_QUESTIONS = true; // quiz mode toggle
 
 // Question timer state
 let Q = { selected: null, revealed: false, timedOut: false, timeLeft: 15, interval: null };
@@ -896,7 +931,44 @@ function tapCard(card, el) {
   }
 
   ACTIVE_CARD = card;
+
+  if (!WITH_QUESTIONS) {
+    playCardDirectly(card);
+    return;
+  }
+
   openQuestion(card);
+}
+
+function playCardDirectly(card) {
+  const curPlayer = G.players[G.currentPlayerIndex];
+  G = {
+    ...G,
+    players: G.players.map(p => p.id === curPlayer.id
+      ? { ...p, hand: p.hand.filter(c => c.id !== card.id) }
+      : p)
+  };
+
+  const winner = checkWinner(G);
+  if (winner) {
+    G = calcScores(G, winner);
+    showGameOver(winner);
+    ACTIVE_CARD = null;
+    return;
+  }
+
+  if (card.action === 'wild' || card.action === 'wild4') {
+    PHASE = 'colorpick';
+    document.getElementById('color-player-name').textContent = `${curPlayer.name} jogou um Coringa 🃏`;
+    openModal('color');
+    renderGame();
+    return;
+  }
+
+  G = nextPlayerFn(applyEffect(G, card));
+  ACTIVE_CARD = null;
+  checkUnoAlert();
+  renderGame();
 }
 
 function handleDraw() {
@@ -1223,6 +1295,28 @@ function goLanding() {
   G = null; PHASE = 'landing'; ACTIVE_CARD = null;
   showScreen('landing');
   renderLanding();
+}
+
+function toggleQuizMode() {
+  WITH_QUESTIONS = !WITH_QUESTIONS;
+  const track   = document.getElementById('quiz-toggle');
+  const sub     = document.getElementById('qm-sub-text');
+  const rulePlay    = document.getElementById('rule-play-text');
+  const ruleCorrect = document.getElementById('rule-correct');
+  const ruleWrong   = document.getElementById('rule-wrong');
+  if (WITH_QUESTIONS) {
+    track.classList.add('on');
+    sub.textContent = 'Responda perguntas para jogar cartas';
+    rulePlay.textContent = 'Toque em uma carta jogável para responder uma pergunta';
+    ruleCorrect.style.display = '';
+    ruleWrong.style.display   = '';
+  } else {
+    track.classList.remove('on');
+    sub.textContent = 'Cartas jogadas diretamente, sem perguntas';
+    rulePlay.textContent = 'Toque em uma carta jogável para jogá-la diretamente';
+    ruleCorrect.style.display = 'none';
+    ruleWrong.style.display   = 'none';
+  }
 }
 
 function showHistory() {
