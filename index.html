@@ -375,6 +375,34 @@
     .shaking { animation: shake .4s ease-in-out; }
     .playable-lift { transform: translateY(-10px); }
 
+    /* ── History modal ── */
+    #history-list { padding: 0 14px 4px; max-height: 55vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #history-list::-webkit-scrollbar { display: none; }
+    .hist-row {
+      display: flex; align-items: center; gap: 12px;
+      background: #1f2937; border-radius: 16px; padding: 12px 14px; margin-bottom: 8px;
+    }
+    .hist-rank  { font-size: 22px; min-width: 28px; text-align: center; }
+    .hist-info  { flex: 1; min-width: 0; }
+    .hist-winner { font-weight: 900; font-size: 14px; }
+    .hist-date   { font-size: 11px; color: #9ca3af; margin-top: 2px; font-weight: 700; }
+    .hist-time   { font-weight: 900; font-size: 13px; color: #fbbf24; white-space: nowrap; }
+
+    /* ── Draw toast ── */
+    #draw-toast {
+      position: fixed; top: 30%; left: 50%; transform: translateX(-50%);
+      display: none; pointer-events: none; z-index: 100;
+    }
+    #draw-toast.show { display: flex; }
+    .draw-toast-inner {
+      background: #1f2937; border: 2px solid #374151; color: #fff; font-weight: 900;
+      font-size: 20px; padding: 14px 28px; border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+      text-align: center; animation: slide-up .25s ease-out;
+      white-space: nowrap;
+    }
+    .draw-toast-sub { font-size: 13px; color: #9ca3af; margin-top: 4px; font-weight: 700; }
+
     /* ── Quiz mode toggle ── */
     .quiz-mode-row {
       display: flex; align-items: center; justify-content: space-between;
@@ -524,6 +552,28 @@
 <section id="screen-gameover" class="screen">
   <div class="gameover-inner" id="gameover-content"></div>
 </section>
+
+<!-- ══════════════ HISTORY MODAL ══════════════ -->
+<div id="modal-history" class="modal-backdrop" onclick="if(event.target===this)closeHistory()">
+  <div class="modal-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 14px 10px;">
+      <div style="font-weight:900;font-size:20px;">📋 Histórico</div>
+      <button onclick="closeHistory()" style="background:#1f2937;border:none;color:#9ca3af;font-size:22px;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <div id="history-list"></div>
+    <div style="padding:10px 14px 4px;">
+      <button onclick="clearHistory()" style="width:100%;min-height:52px;border-radius:16px;background:#1f2937;border:2px solid #374151;color:#f87171;font-weight:900;font-size:14px;">🗑 Limpar Histórico</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ DRAW TOAST ══════════════ -->
+<div id="draw-toast">
+  <div class="draw-toast-inner">
+    <div id="draw-toast-main"></div>
+    <div class="draw-toast-sub" id="draw-toast-sub"></div>
+  </div>
+</div>
 
 <!-- ══════════════ UNO TOAST ══════════════ -->
 <div id="uno-toast">
@@ -705,6 +755,7 @@ function applyEffect(G, card, chosenColor) {
       const ti = nextIdx(), tgt = s.players[ti];
       s = drawCardsFor(s, tgt.id, 2);
       s.message = `+2 ${tgt.name} comprou 2 cartas!`;
+      showDrawToast(tgt.name, 2);
       s = nextPlayerFn(s);
       break;
     }
@@ -717,6 +768,7 @@ function applyEffect(G, card, chosenColor) {
       const ti = nextIdx(), tgt = s.players[ti];
       s = drawCardsFor(s, tgt.id, 4);
       s.message = `+4 ${tgt.name} comprou 4 cartas!`;
+      showDrawToast(tgt.name, 4);
       s = nextPlayerFn(s);
       break;
     }
@@ -770,6 +822,10 @@ function openModal(name) {
 function closeModals() {
   document.getElementById('modal-question').classList.remove('open');
   document.getElementById('modal-color').classList.remove('open');
+}
+
+function closeHistory() {
+  document.getElementById('modal-history').classList.remove('open');
 }
 
 // ══════════════════════════════════════════════════
@@ -1178,6 +1234,14 @@ function showUnoToast(name) {
   setTimeout(() => toast.classList.remove('show'), 2400);
 }
 
+function showDrawToast(name, count) {
+  const toast = document.getElementById('draw-toast');
+  document.getElementById('draw-toast-main').textContent = `+${count} cartas!`;
+  document.getElementById('draw-toast-sub').textContent = `${name} comprou ${count} carta${count > 1 ? 's' : ''}`;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
 // ══════════════════════════════════════════════════
 // GAME OVER
 // ══════════════════════════════════════════════════
@@ -1321,11 +1385,32 @@ function toggleQuizMode() {
 
 function showHistory() {
   const history = JSON.parse(localStorage.getItem('uno-history') || '[]');
-  if (history.length === 0) { alert('Nenhuma partida registrada ainda!'); return; }
-  const msg = history.slice(0, 10).map((r, i) =>
-    `${i+1}. ${r.date} — 🏆 ${r.winner} (${Math.floor(r.duration/60)}m${r.duration%60}s)`
-  ).join('\n');
-  alert('📋 Histórico:\n\n' + msg);
+  const listEl = document.getElementById('history-list');
+  if (history.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;color:#6b7280;font-weight:700;padding:32px 0;">Nenhuma partida registrada ainda.</div>';
+  } else {
+    const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
+    listEl.innerHTML = history.slice(0, 10).map((r, i) => {
+      const mins = Math.floor(r.duration / 60);
+      const secs = r.duration % 60;
+      const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      return `<div class="hist-row">
+        <span class="hist-rank">${medals[i] || (i+1)+'.'}</span>
+        <div class="hist-info">
+          <div class="hist-winner">🏆 ${r.winner}</div>
+          <div class="hist-date">${r.date} · ${r.players?.length ?? '?'} jogadores</div>
+        </div>
+        <div class="hist-time">${timeStr}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('modal-history').classList.add('open');
+}
+
+function clearHistory() {
+  if (!confirm('Limpar todo o histórico?')) return;
+  localStorage.removeItem('uno-history');
+  showHistory();
 }
 
 // ══════════════════════════════════════════════════
